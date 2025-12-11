@@ -2,7 +2,7 @@ import streamlit as st
 import numpy as np
 from data.coordinates import locations, n_cities
 from core.matrix_utils import build_distance_matrix
-from core.ant_algorithm import ACO
+from core.ant_algorithm import run_aco
 from visual.plotting import plot_route_image
 
 st.set_page_config(page_title="Isparta Drone ACO Optimizasyonu", layout="wide")
