@@ -4,7 +4,7 @@ from core.matrix_utils import build_distance_matrix
 
 
 # -----------------------------------------
-# Rastgele başlangıç şehri + tüm şehirleri dolaşan rota
+# Rastgele rota üretimi
 # -----------------------------------------
 def generate_route(pheromone, heuristic):
     start = random.randint(0, n_cities - 1)
@@ -19,14 +19,13 @@ def generate_route(pheromone, heuristic):
             if next_city in visited:
                 probabilities.append(0)
             else:
-                tau = pheromone[current][next_city]       # feromon
-                eta = heuristic[current][next_city]       # bilgi sezgisi
-                probabilities.append(tau * (eta ** 2))     # α=1, β=2 varsayımı
+                tau = pheromone[current][next_city]       # feromon miktarı
+                eta = heuristic[current][next_city]       # sezgisel bilgi
+                probabilities.append(tau * (eta ** 2))    # α=1, β=2
 
         total = sum(probabilities)
 
         if total == 0:
-            # Tüm ihtimaller 0 olursa rastgele seçim
             unvisited = list(set(range(n_cities)) - visited)
             next_city = random.choice(unvisited)
         else:
@@ -47,7 +46,7 @@ def route_distance(route, distance_matrix):
     for i in range(len(route) - 1):
         total += distance_matrix[route[i]][route[i + 1]]
 
-    # tura kapat
+    # rota döngü olsun
     total += distance_matrix[route[-1]][route[0]]
     return total
 
@@ -70,7 +69,7 @@ def update_pheromones(pheromone, routes, distances, evaporation_rate=0.5):
             pheromone[a][b] += deposit
             pheromone[b][a] += deposit
 
-        # rotayı kapat
+        # rota kapanışı
         pheromone[route[-1]][route[0]] += deposit
 
     return pheromone
@@ -82,10 +81,10 @@ def update_pheromones(pheromone, routes, distances, evaporation_rate=0.5):
 def run_aco(api_key=None, num_ants=10, num_iterations=50):
     distance_matrix = build_distance_matrix(api_key)
 
-    # feromon başlangıç matrisi
+    # feromon matrisi
     pheromone = [[1 for _ in range(n_cities)] for _ in range(n_cities)]
 
-    # heuristic = 1 / mesafe
+    # sezgisel bilgi = 1 / mesafe
     heuristic = [
         [
             (1 / distance_matrix[i][j]) if distance_matrix[i][j] != 0 else 0
@@ -98,7 +97,8 @@ def run_aco(api_key=None, num_ants=10, num_iterations=50):
     best_distance = float("inf")
     distance_progress = []
 
-    for iteration in range(num_iterations):
+    for _ in range(num_iterations):
+
         routes = []
         distances = []
 
@@ -109,16 +109,18 @@ def run_aco(api_key=None, num_ants=10, num_iterations=50):
             routes.append(route)
             distances.append(d)
 
-        # en iyi rota
+        # o iterasyonda en iyi rota
         min_d = min(distances)
         min_r = routes[distances.index(min_d)]
 
+        # global en iyi güncelle
         if min_d < best_distance:
             best_distance = min_d
             best_route = min_r
 
         distance_progress.append(best_distance)
 
+        # feromon güncelle
         pheromone = update_pheromones(pheromone, routes, distances)
 
     return best_route, best_distance, distance_progress, distance_matrix
