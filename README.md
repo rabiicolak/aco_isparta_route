@@ -8,7 +8,7 @@ en iyi rotayı, yakınsama grafiğini ve harita üzerindeki rota çizimini gör�
 
 ---
 
-## 📌 Kullanılan Teknolojiler
+## Kullanılan Teknolojiler
 - **Python 3.10+**
 - **Streamlit**
 - **Matplotlib**
