@@ -1,30 +1,31 @@
 import streamlit as st
-import numpy as np
-from data.coordinates import locations, n_cities
+from data.coordinates import locations
 from core.matrix_utils import build_distance_matrix
 from core.ant_algorithm import run_aco
 from core.visual.plotting import plot_route, plot_convergence
 
-
-# ----------- Streamlit Sayfa Ayarları -----------
+# ----------- Streamlit Ayarları -----------
 st.set_page_config(page_title="Isparta Drone ACO Optimizasyonu", layout="wide")
 
 st.title("🚁 Isparta Acil Durum Drone Rota Optimizasyonu (ACO)")
-st.write("Karınca Kolonisi Algoritması kullanılarak en kısa rota hesaplanır.")
+st.write("Google Maps API ile alınan gerçek yol mesafeleri kullanılarak en kısa rota hesaplanır.")
 
+# ----------- API KEY -----------
+api_key = st.secrets["GOOGLE_MAPS_API_KEY"]
 
-# ----------- Kullanıcı Parametreleri -----------
+# ----------- Parametreler -----------
 st.sidebar.header("ACO Parametreleri")
-
-num_ants = st.sidebar.slider("Karınca Sayısı", min_value=5, max_value=50, value=20)
-iterations = st.sidebar.slider("İterasyon Sayısı", min_value=10, max_value=200, value=50)
-
+num_ants = st.sidebar.slider("Karınca Sayısı", 5, 50, 20)
+iterations = st.sidebar.slider("İterasyon Sayısı", 10, 200, 50)
 
 # ----------- Optimizasyonu Başlat -----------
 if st.button("🚀 Optimizasyonu Başlat"):
 
-    best_route, best_distance, distance_progress, distance_matrix = run_aco(
-        api_key=None,
+    with st.spinner("🌍 Google Maps API ile mesafe matrisi oluşturuluyor..."):
+        distance_matrix = build_distance_matrix(api_key)
+
+    best_route, best_distance, distance_progress = run_aco(
+        distance_matrix,
         num_ants=num_ants,
         num_iterations=iterations
     )
@@ -32,18 +33,13 @@ if st.button("🚀 Optimizasyonu Başlat"):
     st.success(f"**En İyi Mesafe:** {best_distance:.3f} km")
     st.write("**En iyi rota (şehir indeksleri):**", best_route)
 
-
-    # ----------- Convergence Grafiği -----------
+    # ---------- Convergence ----------
     st.subheader("📉 ACO Convergence Grafiği")
-    fig1 = plot_convergence(distance_progress)
-    st.pyplot(fig1)
+    st.pyplot(plot_convergence(distance_progress))
 
-
-    # ----------- Rota Haritası -----------
+    # ---------- Route Visualization ----------
     st.subheader("🗺️ En İyi Rota Harita Çizimi")
-    fig2 = plot_route(best_route, locations)
-    st.pyplot(fig2)
-
+    st.pyplot(plot_route(best_route, locations))
 
 else:
     st.info("Sol taraftan parametreleri ayarlayıp 'Optimizasyonu Başlat' butonuna tıklayın.")
