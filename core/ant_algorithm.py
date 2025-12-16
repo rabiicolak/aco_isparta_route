@@ -4,7 +4,7 @@ from data.coordinates import n_cities
 # -----------------------------------------
 # Rastgele rota üretimi
 # -----------------------------------------
-def generate_route(pheromone, heuristic):
+def generate_route(pheromone, heuristic, alpha, beta):
     start = random.randint(0, n_cities - 1)
     route = [start]
     visited = {start}
@@ -17,9 +17,9 @@ def generate_route(pheromone, heuristic):
             if next_city in visited:
                 probabilities.append(0)
             else:
-                tau = pheromone[current][next_city]       # feromon
-                eta = heuristic[current][next_city]       # sezgisel bilgi
-                probabilities.append(tau * (eta ** 2))    # α=1, β=2
+                tau = pheromone[current][next_city]   # feromon
+                eta = heuristic[current][next_city]   # sezgisel bilgi
+                probabilities.append((tau ** alpha) * (eta ** beta))
 
         total = sum(probabilities)
 
@@ -28,7 +28,10 @@ def generate_route(pheromone, heuristic):
             next_city = random.choice(unvisited)
         else:
             probabilities = [p / total for p in probabilities]
-            next_city = random.choices(range(n_cities), weights=probabilities)[0]
+            next_city = random.choices(
+                range(n_cities),
+                weights=probabilities
+            )[0]
 
         route.append(next_city)
         visited.add(next_city)
@@ -51,7 +54,7 @@ def route_distance(route, distance_matrix):
 # -----------------------------------------
 # Feromon güncelleme
 # -----------------------------------------
-def update_pheromones(pheromone, routes, distances, evaporation_rate=0.5):
+def update_pheromones(pheromone, routes, distances, evaporation_rate):
     for i in range(n_cities):
         for j in range(n_cities):
             pheromone[i][j] *= (1 - evaporation_rate)
@@ -72,12 +75,22 @@ def update_pheromones(pheromone, routes, distances, evaporation_rate=0.5):
 # -----------------------------------------
 # ANA ACO ALGORİTMASI
 # -----------------------------------------
-def run_aco(distance_matrix, num_ants=10, num_iterations=50):
+def run_aco(
+    distance_matrix,
+    num_ants=10,
+    num_iterations=50,
+    alpha=1.0,
+    beta=2.0,
+    evaporation=0.5
+):
 
     # feromon matrisi
-    pheromone = [[1 for _ in range(n_cities)] for _ in range(n_cities)]
+    pheromone = [
+        [1 for _ in range(n_cities)]
+        for _ in range(n_cities)
+    ]
 
-    # sezgisel bilgi
+    # sezgisel bilgi (1 / mesafe)
     heuristic = [
         [
             (1 / distance_matrix[i][j]) if distance_matrix[i][j] != 0 else 0
@@ -95,7 +108,12 @@ def run_aco(distance_matrix, num_ants=10, num_iterations=50):
         distances = []
 
         for _ in range(num_ants):
-            route = generate_route(pheromone, heuristic)
+            route = generate_route(
+                pheromone,
+                heuristic,
+                alpha,
+                beta
+            )
             d = route_distance(route, distance_matrix)
             routes.append(route)
             distances.append(d)
@@ -109,6 +127,11 @@ def run_aco(distance_matrix, num_ants=10, num_iterations=50):
 
         distance_progress.append(best_distance)
 
-        pheromone = update_pheromones(pheromone, routes, distances)
+        pheromone = update_pheromones(
+            pheromone,
+            routes,
+            distances,
+            evaporation_rate=evaporation
+        )
 
     return best_route, best_distance, distance_progress
